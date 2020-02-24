@@ -1,4 +1,4 @@
-dataPath = 'C:\Users\kaigr\OneDrive\Documents\Graduate Research\MATLAB\FreeRotor2DIR\new\Data';
+dataPath = 'C:\Users\kaigr\OneDrive\Documents\Graduate Research\MATLAB\FreeRotor2DIR\Data';
 temp = load2DIRdata(dataPath, [58 63 70 73 76]);
 temp = sort2DIRdata(temp, 'sortby', 't2');
 data = calibrate2DIRdata(temp,[0.875,297]);

@@ -1,4 +1,3 @@
-% global h c
 
 maxVibLvl = 2;
 maxRotLvl = 7; %7
@@ -7,13 +6,13 @@ maxRotLvl = 7; %7
 [j1, j2] = getJStateMatrices(maxVibLvl, maxRotLvl);
 [m1, m2] = getMStateMatrices(maxVibLvl, maxRotLvl);
 
-t1s = 0:200:55000;
-t3s = 0:200:55000;
+t1s = 0:100:30000;
+t3s = 0:100:14000;
 t3s = t3s';
-t2 = 1;
-t_J = 20000;
+t2 = 200;
+t_J = 6000;
 
-temperature = 12; %K 12
+temperature = 15; %K 12
 
 
 lineshapeForm = '1fast';
@@ -40,7 +39,7 @@ peakThreshold = 0.2;
 symmetry = 'even';
 
 dataPathFTIR = ['C:\Users\kaigr\OneDrive\Documents\Graduate Research\MATLAB'...
-    '\FreeRotor2DIR\new\Data\CO2_THF_950um_FlowCell.CSV'];
+    '\FreeRotor2DIR\Data\CO2_THF_950um_FlowCell.CSV'];
 
 [~, ~, gasConst] = getEmpericalGasPhaseHamiltonian(dataPathFTIR, range1,...
     baseline_range, peakThreshold, symmetry);
@@ -78,8 +77,8 @@ roVibDensityMatrix = roVibDensityMatrix.*1000;
 % temperature = 3;
 t2TimeProp = getT2TimePropagation(t2, t_J, maxVibLvl, maxRotLvl, temperature, 'even');
 
-t2TimeProp.Norm = 1;
-t2TimeProp.Conj = 1;
+% t2TimeProp.Norm = 1;
+% t2TimeProp.Conj = 1;
 %%
 clear symmetry temperature DenTime v1 v2 j1 j2 m1 m2 maxRotLvl maxVibLvl gasConst
 
@@ -106,14 +105,18 @@ fprintf('Calculating Lineshape ... ');
 tic
 [lineshape2D, lineshape1D] = getLineshape(t1s, t2, t3s, ...
     lineshapeForm, lineshapeParams);
+% lineshape2D = sparse(lineshape2D); % Using sparse in this case actually makes the variable larger.
+% lineshape1D = sparse(lineshape1D);
 lineshapeTime = toc;
 fprintf('Done.\nTime: %f s\n\n', lineshapeTime);
 clear lineshapeTime
 
 
 %%
-R_r_fun = {@getR1Cell, @getR2Cell, @getR3Cell};
-R_nr_fun = {@getR4Cell, @getR5Cell, @getR6Cell};
+parapool_flag = false;
+
+R_r_fun = {@getR1, @getR2, @getR3};
+R_nr_fun = {@getR4, @getR5, @getR6};
 R_r = cell(1, length(R_r_fun));
 R_nr = cell(1, length(R_nr_fun));
 J_r = cell(1, length(R_r_fun));
@@ -203,8 +206,8 @@ ylabel('t_3 (fs)')
 title('R_{nr}')
 %%
 
-n_zp1 = 4*length(t1s);
-n_zp3 = 4*length(t3s);
+n_zp1 = 2*length(t1s);
+n_zp3 = 1*length(t3s);
 
 R_r_fft = fftshift(fliplr(circshift(ifft2(R_r_tot, n_zp3, n_zp1),[0 -1])));
 R_nr_fft = fftshift(ifft2(R_nr_tot, n_zp3, n_zp1));
@@ -214,8 +217,8 @@ R_tot = R_r_fft + R_nr_fft;
 freq1 = fftFreqAxis(t1s, 'time_units', 'fs', 'zeropad', n_zp1)+2300;
 freq3 = fftFreqAxis(t3s, 'time_units', 'fs', 'zeropad', n_zp3)+2300;
 
-range1 = [2340 2360];
-range3 = [2315 2360];
+range1 = [2310 2360];
+range3 = [2310 2360];
 
 Rcrop = R_tot(freq3 >= range3(1) & freq3 <= range3(2), freq1 >= range1(1) & freq1 <= range1(2));
 
@@ -224,5 +227,5 @@ freq3 = freq3(freq3 >= range3(1) & freq3 <= range3(2));
 
 fig3 = figure(3);
 clf
-my2dPlot(freq1, freq3, real(Rcrop),'pumpprobe',false,'n_contours',6, 'zlimit', 0.75)
+my2dRoVibPlot(freq1, freq3, real(Rcrop),'pumpprobe',false,'n_contours',10, 'zlimit', .5)
 
