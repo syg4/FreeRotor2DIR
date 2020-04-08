@@ -98,18 +98,23 @@ RFit = fit(RJNums, RFreqs, 'poly3');
 %%
 fig2 = figure(200);
 clf
+hold on
+plot(PJNums, PFit(PJNums), ':', 'LineWidth', 3, 'Color', [0.75, 0, 0.75])
+plot(PJNums, PFreqs, 'o', 'Color', [0.4940, 0.1840, 0.5560], 'MarkerFaceColor', [0.4940, 0.1840, 0.5560]);
+plot(RJNums, RFit(RJNums), ':', 'LineWidth', 3, 'Color', [0.4660, 0.6740, 0.1880])
+plot(RJNums, RFreqs, 'o', 'Color', [0, 0.5, 0], 'MarkerFaceColor', [0, 0.5, 0]);
+
+
 box off
 fig2.Children.TickDir = 'out'; % sets your ticks to point outwards
 fig2.Children.TickLength = 1.5.*fig2.Children.TickLength;
+fig2.Children.FontSize = 12;
+fig2.Children.XColor = 'k';
+fig2.Children.YColor = 'k';
 fig2.Color = 'w';
-
-hold on
-plot(PJNums, PFreqs, 'co', RJNums, RFreqs, 'ro');
-plot(PFit, 'c-')
-plot(RFit, 'r-')
 xlabel('J"')
 ylabel('\omega_1/2\pic')
-legend({'P Data', 'R Data', 'P Fit', 'R Fit'}, 'Location', 'northwest')
+legend({'P Fit', 'P Data', 'R Fit', 'R Data'}, 'Position', [0.6907 0.5067 0.1804 0.2131], 'Box', 'off', 'FontSize', 12)
 hold off
 
 

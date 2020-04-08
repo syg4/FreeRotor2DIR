@@ -64,10 +64,10 @@ phi = phi./sum(phi);
 
 % vdiag = eq(v1, v2);
 
-t2TimeProp.Norm = J.*(eq(j2,j1).*exp(-t2./tau_J) + phi.*(1-exp(-t2./tau_J)))./g;
+t2TimeProp = J.*(eq(j2,j1).*exp(-t2./tau_J) + phi.*(1-exp(-t2./tau_J)))./g;
 
-t2TimeProp.Norm = sparse(t2TimeProp.Norm);
+t2TimeProp = sparse(t2TimeProp);
 % J.*(2.*pi.*momentOfInertia.*k.*temperature.*(1-exp(-2.*t2./t_j))).*...
 %     exp(-1.*(j2-j1.*exp(-1.*t2./t_j))^2./(2.*momentOfInertia.*k.*temperature.*(1-exp(2.*t2./t_j))));
 
-t2TimeProp.Conj = conj(t2TimeProp.Norm);
+% t2TimeProp.Conj = conj(t2TimeProp.Norm);
