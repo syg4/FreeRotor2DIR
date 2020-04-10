@@ -1,17 +1,18 @@
-load('C:\Users\kaigr\OneDrive\Documents\Graduate Research\MATLAB\FreeRotorGPUCPUHybrid\Data\058.mat');
+params_new.path = fileparts(mfilename('fullpath'));
+
+load(fullfile(params_new.path, 'Data', '2DIR', '076.mat'));
 r1 = [2300 2380];
 r3 = [data(1).w3(1) data(1).w3(end)];
 
 expData = cropData(data, r1, r3);
-clear data r1 r3
+clear data
 %%
 baseline_range = [3985 3990];
 range1 = [2295 2400];
 peakThreshold = 0.2;
 params_new.symmetry = 'even';
 
-params_new.dataPathFTIR = ['C:\Users\kaigr\OneDrive\Documents\Graduate Research\MATLAB'...
-    '\FreeRotorGPUCPUHybrid\Data\CO2_THF_950um_FlowCell.CSV'];
+params_new.dataPathFTIR = fullfile(params_new.path, 'Data', 'FTIR', 'CO2_THF_950um_FlowCell.CSV');
 
 [~, ~, params_new.gasConst] = getEmpericalGasPhaseHamiltonian(params_new.dataPathFTIR, range1,...
     baseline_range, peakThreshold, params_new.symmetry);
@@ -26,7 +27,7 @@ params_new.flag_t3_parallel_pool = true; % Do you want t3 time dependence to be 
 params_new.flag_t3_gpu = false;% Do you want t3 time-dependence to be calculated using gpu
 
 params_new.maxVibLvl = 2;
-params_new.maxRotLvl = 45;
+params_new.maxRotLvl = 49;
 
 params_new.windowType = 'hamming';
 params_new.windowParams = struct();
@@ -37,7 +38,7 @@ params_new.windowParams = struct();
 % J = 25    T = 75
 % J = 45    T = 273
 
-params_new.temperature = 273;
+params_new.temperature = 298;
 
 params_new.rotatingWaveShift = 2250;
 params_new.w0 = 2350;
@@ -61,7 +62,7 @@ params_new.t2s = [200]; % 1000 10000 60000 100000];
 params_new.t_J = 6000;
 
 %%
-if flag_t1_parallel_pool || flag_t3_parallel_pool
+if params_new.flag_t1_parallel_pool || params_new.flag_t3_parallel_pool
     if isempty(gcp('nocreate'))
         prpl = parpool;
     else
@@ -73,22 +74,19 @@ end
 
 %%
 try
-    load(sprintf(['C:\\Users\\kaigr\\OneDrive\\Documents\\Graduate Research\\'...
-        'MATLAB\\FreeRotorGPUCPUHybrid\\Inputs\\simWorkspace_%iJ_%iK.mat'],...
-        [params_new.maxRotLvl, params_new.temperature]));
+    load(fullfile(params_new.path, 'Inputs', sprintf('simWorkspace_%iJ_%iK.mat',...
+        [params_new.maxRotLvl, params_new.temperature])));
     
     if ~isequal(params_new, params)
         setupSimWorkspace(params_new);
-        load(sprintf(['C:\\Users\\kaigr\\OneDrive\\Documents\\Graduate Research\\'...
-        'MATLAB\\FreeRotorGPUCPUHybrid\\Inputs\\simWorkspace_%iJ_%iK.mat'],...
-        [params_new.maxRotLvl, params_new.temperature]));
+        load(fullfile(params_new.path, 'Inputs', sprintf('simWorkspace_%iJ_%iK.mat',...
+        [params_new.maxRotLvl, params_new.temperature])));
     end
 catch
     fprintf('\nWorkspace not found\nGenerating workspace ...\n\n')
     setupSimWorkspace(params_new);
-    load(sprintf(['C:\\Users\\kaigr\\OneDrive\\Documents\\Graduate Research\\'...
-        'MATLAB\\FreeRotorGPUCPUHybrid\\Inputs\\simWorkspace_%iJ_%iK.mat'],...
-        [params_new.maxRotLvl, params_new.temperature]));
+    load(fullfile(params_new.path, 'Inputs', sprintf('simWorkspace_%iJ_%iK.mat',...
+        [params_new.maxRotLvl, params_new.temperature])));
     fprintf('Generating workspace ... Done\n')
 end
 
@@ -185,12 +183,12 @@ for ii = 1:length(params.t2s)
 end
 
 %%
-todaysDir = sprintf('C:\\Users\\kaigr\\OneDrive\\Documents\\Graduate Research\\MATLAB\\FreeRotorGPUCPUHybrid\\Outputs\\%s', datestr(now,'yyyy-mm-dd'));
+todaysDir = fullfile(params.path, 'Outputs', sprintf('%s', datestr(now,'yyyy-mm-dd')));
 if ~exist(todaysDir, 'dir')
     mkdir(todaysDir)
 end
 
-filename = strcat(todaysDir, sprintf('\\%iJ_%iK_%itJ_out.mat', [params.maxRotLvl, params.temperature, params.t_J]));
+filename = fullfile(todaysDir, sprintf('%iJ_%iK_%itJ_out.mat', [params.maxRotLvl, params.temperature, params.t_J]));
 
 fileExists = true;
 fileNum = 1;
@@ -208,8 +206,8 @@ while fileExists
     end
 end
 %%
-r1 = [2300 2380];
-r3 = [2300 2380];
+% r1 = [2300 2380];
+% r3 = [2300 2380];
 
 cpData = cropData(data, r1, r3);
 %%
@@ -217,3 +215,18 @@ cpData = cropData(data, r1, r3);
 f = prepareGlobalFitData(cpData);
 dim = [1 1];
 fig = freeRotorMatrixPlot2DIR(real(f), cpData(1).w1, cpData(1).w3, [cpData(:).t2]./1000, dim, 'fignum', 1, 'zlimit', 1);
+
+%%
+simData = data;
+
+for ii = 1:length(simData)
+    
+    [W1, W3] = meshgrid(expData(ii).w1, expData(ii).w3');
+
+    simData.R = interp2(simData.w1, simData.w3, simData.R, W1, W3);
+    simData.w1 = expData(ii).w1;
+    simData.w3 = expData(ii).w3;
+end
+
+figure(2)
+my2dRoVibPlot(simData(1).w1, simData(1).w3, simData(1).R)

@@ -33,9 +33,8 @@ gasConst = params.gasConst;
 old_workspace = [];
 %%
 try
-    old_workspace = load(sprintf(['C:\\Users\\kaigr\\OneDrive\\Documents\\Graduate Research\\'...
-        'MATLAB\\FreeRotorGPUCPUHybrid\\Inputs\\simWorkspace_%iJ_%iK.mat'],...
-        [maxRotLvl, temperature]));
+    old_workspace = load(fullfile(params.path, 'Inputs',...
+        sprintf('simWorkspace_%iJ_%iK.mat', [maxRotLvl, temperature])));
     
     if ~isequal(old_workspace.params.maxRotLvl, maxRotLvl) || ~isequal(old_workspace.params.maxVibLvl, maxVibLvl)
         fprintf('Calculating Transition Dipole Matrices ... ');
@@ -176,7 +175,7 @@ end
 
 %%
 if isempty(old_workspace)
-    fprintf('Calculating t1 Time Propagators ... ');
+    fprintf('Calculating t3 Time Propagators ... ');
     tic
     t3TimeProp = getTimePropagationCell(HamiltonianMatrix_rotWave, t3s,...
         'flag_parallel_pool', flag_t3_parallel_pool, 'flag_gpu', flag_t3_gpu);
@@ -187,7 +186,7 @@ else
             || ~isequal(old_workspace.params.t3s, t3s) ...
             || ~isequal(old_workspace.params.flag_t3_gpu, flag_t3_gpu))
         
-        fprintf('Calculating t1 Time Propagators ... ');
+        fprintf('Calculating t3 Time Propagators ... ');
         tic
         t3TimeProp = getTimePropagationCell(HamiltonianMatrix_rotWave, t3s,...
             'flag_parallel_pool', flag_t3_parallel_pool, 'flag_gpu', flag_t3_gpu);
@@ -235,5 +234,5 @@ clear timePropTime old_workspace
 clear flag_t1_parallel_pool flag_t1_gpu flag_t3_parallel_pool flag_t3_gpu
 clear maxVibLvl maxRotLvl temperature t1s t3s symmetry rotatingWaveShift gasConst
 
-save(sprintf('C:\\Users\\kaigr\\OneDrive\\Documents\\Graduate Research\\MATLAB\\FreeRotorGPUCPUHybrid\\Inputs\\simWorkspace_%iJ_%iK.mat', [params.maxRotLvl, params.temperature]))
+save(fullfile(params.path, 'Inputs', sprintf('simWorkspace_%iJ_%iK.mat', [params.maxRotLvl, params.temperature])));
 
