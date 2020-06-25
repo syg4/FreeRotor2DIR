@@ -1,10 +1,10 @@
 params_new.path = fileparts(mfilename('fullpath'));
 
-load(fullfile(params_new.path, 'Data', '2DIR', '076.mat'));
+load(fullfile(params_new.path, 'Data', '2DIR', '076.mat'));         % 1: Load and process 2DIR data
 r1 = [2300 2380];
 r3 = [data(1).w3(1) data(1).w3(end)];
 
-expData = cropData(data, r1, r3);
+expData = cropData(data, r1, r3);                                   % crop experimental data to desired frequency window
 clear data
 %%
 baseline_range = [3985 3990];
@@ -12,22 +12,22 @@ range1 = [2295 2400];
 peakThreshold = 0.2;
 params_new.symmetry = 'even';
 
-params_new.dataPathFTIR = fullfile(params_new.path, 'Data', 'FTIR', 'CO2_THF_950um_FlowCell.CSV');
+params_new.dataPathFTIR = fullfile(params_new.path, 'Data', 'FTIR', 'CO2_THF_950um_FlowCell.CSV');      % 2: Load FTIR data and define parameters
 
-[~, ~, params_new.gasConst] = getEmpericalGasPhaseHamiltonian(params_new.dataPathFTIR, range1,...
+[~, ~, params_new.gasConst] = getEmpericalGasPhaseHamiltonian(params_new.dataPathFTIR, range1,...       
     baseline_range, peakThreshold, params_new.symmetry);
 
 clear baseline_range range1 peakThreshold
 close([figure(100) figure(200)])
 %%
 
-params_new.flag_t1_parallel_pool = true; % Do you want t1 time dependence to be calculated in parallel
+params_new.flag_t1_parallel_pool = false; % Do you want t1 time dependence to be calculated in parallel
 params_new.flag_t1_gpu = false; % Do you want t1 time-dependence to be calculated using gpu
-params_new.flag_t3_parallel_pool = true; % Do you want t3 time dependence to be calculated in parallel
+params_new.flag_t3_parallel_pool = false; % Do you want t3 time dependence to be calculated in parallel
 params_new.flag_t3_gpu = false;% Do you want t3 time-dependence to be calculated using gpu
 
-params_new.maxVibLvl = 2;
-params_new.maxRotLvl = 49;
+params_new.maxVibLvl = 2;                           % define maximum vibrational and rotational levels obtainable in model
+params_new.maxRotLvl = 5;
 
 params_new.windowType = 'hamming';
 params_new.windowParams = struct();
@@ -38,9 +38,9 @@ params_new.windowParams = struct();
 % J = 25    T = 75
 % J = 45    T = 273
 
-params_new.temperature = 298;
+params_new.temperature = 3;                   % define temperature for simulation
 
-params_new.rotatingWaveShift = 2250;
+params_new.rotatingWaveShift = 2250;            % apply rotating frame to achieve desired sampling frequency(?)
 params_new.w0 = 2350;
 
 params_new.lineshapeForm = '1fast';
@@ -54,7 +54,7 @@ w1 = 2225:dw1:2474;
 
 dw3 = expData(1).w3(2) - expData(1).w3(1);
 w3 = 2225:dw3:2475;
-% %%
+% %% 
 params_new.t1s = fftTimeAxis(w1, 'time_units', 'fs');
 params_new.t3s = fftTimeAxis(w3, 'time_units', 'fs')';
 
@@ -71,14 +71,14 @@ if params_new.flag_t1_parallel_pool || params_new.flag_t3_parallel_pool
         fprintf('Done.\n\n')
     end
 end
-
+% 
 %%
 try
-    load(fullfile(params_new.path, 'Inputs', sprintf('simWorkspace_%iJ_%iK.mat',...
-        [params_new.maxRotLvl, params_new.temperature])));
+    load(fullfile(params_new.path, 'Inputs', sprintf('simWorkspace_%iJ_%iK.mat',...     
+        [params_new.maxRotLvl, params_new.temperature])));                              % 4: Begin calculating simulation matrices
     
     if ~isequal(params_new, params)
-        setupSimWorkspace(params_new);
+        setupSimWorkspace(params_new);      % 3: Build Hamiltonian (move to setupSimWorkspace.m)
         load(fullfile(params_new.path, 'Inputs', sprintf('simWorkspace_%iJ_%iK.mat',...
         [params_new.maxRotLvl, params_new.temperature])));
     end
@@ -104,23 +104,23 @@ end
 
 
 %%
-data = struct('t1s', [], 't3s', [], 't2', 0, 'w1', [], 'w3', [], 'R', [],...
+data = struct('t1s', [], 't3s', [], 't2', 0, 'w1', [], 'w3', [], 'R', [],...        % Store data in a structure so it's nice and organized
     'J', [], 'zeropad1', 0, 'zeropad3', 0, 'R_nr_raw', [], 'R_r_raw', [], ...
     'J_nr_raw', [], 'J_r_raw', [], 'R_nr', [], 'R_r', [], 'J_nr', [], 'J_r', [],...
     'lineshape1D', [], 'lineshape2D', [], 'lineshapeForm', params.lineshapeForm,...
     'lineshapeParams', params.lineshapeParams, 'window1D', [], 'window2D', [],...
     'windowType', params.windowType, 'windowParams', params.windowParams);
 %%
-for ii = 1:length(params.t2s)
+for ii = 1:length(params.t2s)           % 5: For i=1:length(t2)
     
 %     t2TimeProp = getT2TimePropagation(t2s(ii), t_J, maxVibLvl, maxRotLvl, temperature, 'even');
 
-    t2TimeProp = 1;
+    t2TimeProp = 1;         % 6: Calculate t2 time propogation
 
     %%
     fprintf('Calculating Lineshape ... ');
     tic
-    [lineshape2D, lineshape1D] = getLineshape(params.t1s, params.t2s(ii), params.t3s, ...
+    [lineshape2D, lineshape1D] = getLineshape(params.t1s, params.t2s(ii), params.t3s, ...       % 7: Calculate lineshape functions
         params.lineshapeForm, params.lineshapeParams);
     lineshapeTime = toc;
     fprintf('Done.\nTime: %f s\n\n', lineshapeTime);
@@ -138,7 +138,7 @@ for ii = 1:length(params.t2s)
     %% Calculate The First- and Third-Order Response
 
     % Calculate the non-rephasing response
-    fprintf('\nCalculating Non-Rephasing Response\n\n')
+    fprintf('\nCalculating Non-Rephasing Response\n\n')             % 8: Calculate non-rephasing response
     [Rnr, Jnr] = getNonRephasingResponse(densityMatrix, transitionDipoleMatrix,...
         t1TimeProp, t3TimeProp, t2TimeProp, lineshape1D, lineshape2D.Rnr, block,...
         'flag_t1_parallel_pool', params.flag_t1_parallel_pool,...
@@ -146,8 +146,7 @@ for ii = 1:length(params.t2s)
         'flag_t3_parallel_pool', params.flag_t3_parallel_pool,...
         'flag_t3_gpu', params.flag_t3_gpu);
     %%
-    fprintf('\nCalculating Rephasing Response\n\n')
-    % Calculate the rephasing response
+    fprintf('\nCalculating Rephasing Response\n\n')                 % 9: Calculate the rephasing response
     [Rr, Jr] = getRephasingResponse(densityMatrix, transitionDipoleMatrix,...
         t1TimeProp, t3TimeProp, t2TimeProp, lineshape1D, lineshape2D.Rr, block,...
         'flag_t1_parallel_pool', params.flag_t1_parallel_pool,...
@@ -155,7 +154,7 @@ for ii = 1:length(params.t2s)
         'flag_t3_parallel_pool', params.flag_t3_parallel_pool,...
         'flag_t3_gpu', params.flag_t3_gpu);
     %%
-    data(ii).t1s = params.t1s;
+    data(ii).t1s = params.t1s;              % 10: Set up for and perform Fourier transforms
     data(ii).t3s = params.t3s;
     data(ii).t2 = params.t2s(ii);
     data(ii).zeropad1 = n_zp1;
@@ -166,8 +165,8 @@ for ii = 1:length(params.t2s)
     data(ii).R_r_raw = Rr;
     data(ii).J_nr_raw = Jnr;
     data(ii).J_r_raw = Jr;
-    data(ii).R_nr = fftshift(ifft2(window2D.*Rnr, n_zp3, n_zp1)); % Preform a 2D inverse FT on the non-rephasing third-order response
-    data(ii).R_r = fftshift(fliplr(circshift(ifft2(window2D.*Rr, n_zp3, n_zp1),[0 -1]))); % Preform a 2D inverse FT on the rephasing third-order response and transform spectra into w1 vs w3
+    data(ii).R_nr = fftshift(ifft2(window2D.*Rnr, n_zp3, n_zp1)); % Perform a 2D inverse FT on the non-rephasing third-order response
+    data(ii).R_r = fftshift(fliplr(circshift(ifft2(window2D.*Rr, n_zp3, n_zp1),[0 -1]))); % Perform a 2D inverse FT on the rephasing third-order response and transform spectra into w1 vs w3
     data(ii).R =  real(data(ii).R_nr + data(ii).R_r);
     data(ii).J_nr = fftshift(sgrsifft(window1D.*Jnr, n_zp1)); % Do inverse Fourier transform and shift the transform
     data(ii).J_r = fftshift(fliplr(circshift(sgrsifft(window1D.*Jr, n_zp1),[0 -1]))); % Do inverse Fourier transform
@@ -183,7 +182,7 @@ for ii = 1:length(params.t2s)
 end
 
 %%
-todaysDir = fullfile(params.path, 'Outputs', sprintf('%s', datestr(now,'yyyy-mm-dd')));
+todaysDir = fullfile(params.path, 'Outputs', sprintf('%s', datestr(now,'yyyy-mm-dd')));     % 11: Save simulation data
 if ~exist(todaysDir, 'dir')
     mkdir(todaysDir)
 end
@@ -209,7 +208,7 @@ end
 % r1 = [2300 2380];
 % r3 = [2300 2380];
 
-cpData = cropData(data, r1, r3);
+cpData = cropData(data, r1, r3);           
 %%
 
 f = prepareGlobalFitData(cpData);
@@ -223,10 +222,10 @@ for ii = 1:length(simData)
     
     [W1, W3] = meshgrid(expData(ii).w1, expData(ii).w3');
 
-    simData.R = interp2(simData.w1, simData.w3, simData.R, W1, W3);
+    simData.R = interp2(simData.w1, simData.w3, simData.R, W1, W3);          % 12: Interpolate simulation data to experiment
     simData.w1 = expData(ii).w1;
     simData.w3 = expData(ii).w3;
 end
 
-figure(2)
+figure(2)                                                                    % 13: Plot simulation data
 my2dRoVibPlot(simData(1).w1, simData(1).w3, simData(1).R)
